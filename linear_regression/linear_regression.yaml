@@ -4,18 +4,18 @@ description: Trains a Linear Regression Classifier
 inputs:
 - {name: Data, type: LocalPath, description: 'Path where data is stored.'}
 outputs:
-- {name: Accuracy, type: Float, description: 'Accuracy metric'}
+- {name: Accuracy, type: Float, description: 'R2 metric'}
 
 implementation:
   container:
-    image: natrofl/linear_regression:v1
+    image: natrofl/linear_regression:v2
     command: [
       python, linear_regression.py,
 
       --data,
       {inputPath: Data},
 
-      --accuracy,
+      --r2,
       {outputPath: Accuracy},
 
     ]
