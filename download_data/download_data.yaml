@@ -6,7 +6,7 @@ outputs:
 
 implementation:
   container:
-    image: natrofl/download_data:v1
+    image: natrofl/download_data:v2
     command: [
       python, download_data.py,
 

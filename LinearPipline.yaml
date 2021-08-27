@@ -2,7 +2,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: boston-housing-pipeline-
-  annotations: {pipelines.kubeflow.org/kfp_sdk_version: 1.7.2, pipelines.kubeflow.org/pipeline_compilation_time: '2021-08-27T13:19:38.147520',
+  annotations: {pipelines.kubeflow.org/kfp_sdk_version: 1.7.2, pipelines.kubeflow.org/pipeline_compilation_time: '2021-08-27T13:39:05.914232',
     pipelines.kubeflow.org/pipeline_spec: '{"description": "Test kubeflow pipline
       for Boston Housing dataset .", "name": "Boston Housing Pipeline"}'}
   labels: {pipelines.kubeflow.org/kfp_sdk_version: 1.7.2}
@@ -29,7 +29,7 @@ spec:
     container:
       args: []
       command: [python, download_data.py, --data, /tmp/outputs/Data/data]
-      image: natrofl/download_data:v1
+      image: natrofl/download_data:v2
     outputs:
       artifacts:
       - {name: download-data-Data, path: /tmp/outputs/Data/data}
@@ -41,9 +41,9 @@ spec:
       annotations: {pipelines.kubeflow.org/component_spec: '{"description": "Download
           Boston Housing data from sklearn datasets", "implementation": {"container":
           {"command": ["python", "download_data.py", "--data", {"outputPath": "Data"}],
-          "image": "natrofl/download_data:v1"}}, "name": "Download Data", "outputs":
+          "image": "natrofl/download_data:v2"}}, "name": "Download Data", "outputs":
           [{"description": "Path where data will be stored.", "name": "Data", "type":
-          "LocalPath"}]}', pipelines.kubeflow.org/component_ref: '{"digest": "401d388a0b535d4fd7e049560916fa9e5aa78851dea8bae45ea4a0a139169d5a",
+          "LocalPath"}]}', pipelines.kubeflow.org/component_ref: '{"digest": "1564208ab811078422f0eeb298e42bb78a4c8319708f4ef3f2b1949cb30daa66",
           "url": "download_data/download_data.yaml"}'}
   - name: linear-regression-classifier
     container:
