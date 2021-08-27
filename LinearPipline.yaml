@@ -1,0 +1,120 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: boston-housing-pipeline-
+  annotations: {pipelines.kubeflow.org/kfp_sdk_version: 1.7.2, pipelines.kubeflow.org/pipeline_compilation_time: '2021-08-27T13:19:38.147520',
+    pipelines.kubeflow.org/pipeline_spec: '{"description": "Test kubeflow pipline
+      for Boston Housing dataset .", "name": "Boston Housing Pipeline"}'}
+  labels: {pipelines.kubeflow.org/kfp_sdk_version: 1.7.2}
+spec:
+  entrypoint: boston-housing-pipeline
+  templates:
+  - name: boston-housing-pipeline
+    dag:
+      tasks:
+      - {name: download-data, template: download-data}
+      - name: linear-regression-classifier
+        template: linear-regression-classifier
+        dependencies: [download-data]
+        arguments:
+          artifacts:
+          - {name: download-data-Data, from: '{{tasks.download-data.outputs.artifacts.download-data-Data}}'}
+      - name: show-results
+        template: show-results
+        dependencies: [linear-regression-classifier]
+        arguments:
+          parameters:
+          - {name: linear-regression-classifier-Accuracy, value: '{{tasks.linear-regression-classifier.outputs.parameters.linear-regression-classifier-Accuracy}}'}
+  - name: download-data
+    container:
+      args: []
+      command: [python, download_data.py, --data, /tmp/outputs/Data/data]
+      image: natrofl/download_data:v1
+    outputs:
+      artifacts:
+      - {name: download-data-Data, path: /tmp/outputs/Data/data}
+    metadata:
+      labels:
+        pipelines.kubeflow.org/kfp_sdk_version: 1.7.2
+        pipelines.kubeflow.org/pipeline-sdk-type: kfp
+        pipelines.kubeflow.org/enable_caching: "true"
+      annotations: {pipelines.kubeflow.org/component_spec: '{"description": "Download
+          Boston Housing data from sklearn datasets", "implementation": {"container":
+          {"command": ["python", "download_data.py", "--data", {"outputPath": "Data"}],
+          "image": "natrofl/download_data:v1"}}, "name": "Download Data", "outputs":
+          [{"description": "Path where data will be stored.", "name": "Data", "type":
+          "LocalPath"}]}', pipelines.kubeflow.org/component_ref: '{"digest": "401d388a0b535d4fd7e049560916fa9e5aa78851dea8bae45ea4a0a139169d5a",
+          "url": "download_data/download_data.yaml"}'}
+  - name: linear-regression-classifier
+    container:
+      args: []
+      command: [python, linear_regression.py, --data, /tmp/inputs/Data/data, --accuracy,
+        /tmp/outputs/Accuracy/data]
+      image: natrofl/linear_regression:v1
+    inputs:
+      artifacts:
+      - {name: download-data-Data, path: /tmp/inputs/Data/data}
+    outputs:
+      parameters:
+      - name: linear-regression-classifier-Accuracy
+        valueFrom: {path: /tmp/outputs/Accuracy/data}
+      artifacts:
+      - {name: linear-regression-classifier-Accuracy, path: /tmp/outputs/Accuracy/data}
+    metadata:
+      labels:
+        pipelines.kubeflow.org/kfp_sdk_version: 1.7.2
+        pipelines.kubeflow.org/pipeline-sdk-type: kfp
+        pipelines.kubeflow.org/enable_caching: "true"
+      annotations: {pipelines.kubeflow.org/component_spec: '{"description": "Trains
+          a Linear Regression Classifier", "implementation": {"container": {"command":
+          ["python", "linear_regression.py", "--data", {"inputPath": "Data"}, "--accuracy",
+          {"outputPath": "Accuracy"}], "image": "natrofl/linear_regression:v1"}},
+          "inputs": [{"description": "Path where data is stored.", "name": "Data",
+          "type": "LocalPath"}], "name": "Linear Regression Classifier", "outputs":
+          [{"description": "Accuracy metric", "name": "Accuracy", "type": "Float"}]}',
+        pipelines.kubeflow.org/component_ref: '{"digest": "a75f3024dd351bdc8faa1f7f4508b988d880525343bd4c97eb205d7135a0e843",
+          "url": "linear_regression/linear_regression.yaml"}'}
+  - name: show-results
+    container:
+      args: [--linear-regression, '{{inputs.parameters.linear-regression-classifier-Accuracy}}']
+      command:
+      - sh
+      - -ec
+      - |
+        program_path=$(mktemp)
+        printf "%s" "$0" > "$program_path"
+        python3 -u "$program_path" "$@"
+      - |
+        def show_results(linear_regression):
+
+            print(f"Linear regression (accuracy): {linear_regression}")
+
+        import argparse
+        _parser = argparse.ArgumentParser(prog='Show results', description='')
+        _parser.add_argument("--linear-regression", dest="linear_regression", type=float, required=True, default=argparse.SUPPRESS)
+        _parsed_args = vars(_parser.parse_args())
+
+        _outputs = show_results(**_parsed_args)
+      image: python:3.7
+    inputs:
+      parameters:
+      - {name: linear-regression-classifier-Accuracy}
+    metadata:
+      labels:
+        pipelines.kubeflow.org/kfp_sdk_version: 1.7.2
+        pipelines.kubeflow.org/pipeline-sdk-type: kfp
+        pipelines.kubeflow.org/enable_caching: "true"
+      annotations: {pipelines.kubeflow.org/component_spec: '{"implementation": {"container":
+          {"args": ["--linear-regression", {"inputValue": "linear_regression"}], "command":
+          ["sh", "-ec", "program_path=$(mktemp)\nprintf \"%s\" \"$0\" > \"$program_path\"\npython3
+          -u \"$program_path\" \"$@\"\n", "def show_results(linear_regression):\n\n    print(f\"Linear
+          regression (accuracy): {linear_regression}\")\n\nimport argparse\n_parser
+          = argparse.ArgumentParser(prog=''Show results'', description='''')\n_parser.add_argument(\"--linear-regression\",
+          dest=\"linear_regression\", type=float, required=True, default=argparse.SUPPRESS)\n_parsed_args
+          = vars(_parser.parse_args())\n\n_outputs = show_results(**_parsed_args)\n"],
+          "image": "python:3.7"}}, "inputs": [{"name": "linear_regression", "type":
+          "Float"}], "name": "Show results"}', pipelines.kubeflow.org/component_ref: '{}',
+        pipelines.kubeflow.org/arguments.parameters: '{"linear_regression": "{{inputs.parameters.linear-regression-classifier-Accuracy}}"}'}
+  arguments:
+    parameters: []
+  serviceAccountName: pipeline-runner
